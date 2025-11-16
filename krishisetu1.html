@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KrishiSetu - Farm Input Marketplace</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Custom Font */
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none; /* Prevents "pull-to-refresh" */
+        }
+        
+        /* Main Theme Colors */
+        :root {
+            --color-primary: #166534; /* Dark Green */
+            --color-secondary: #facc15; /* Yellow */
+            --color-light: #f0fdf4; /* Light Green */
+            --color-danger: #dc2626; /* Red */
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 6px; }
+        ::-webkit-scrollbar-thumb:hover { background: #aaa; }
+
+        /* Page Transitions (Simple Fade) */
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .page.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Active Bottom Nav Tab */
+        .bottom-nav-tab.active {
+            color: var(--color-primary);
+        }
+        .bottom-nav-tab.active svg {
+            transform: scale(1.1);
+        }
+        
+        /* Chatbot Styles */
+        #chatbot-container {
+            position: fixed;
+            bottom: 80px; /* Above bottom nav */
+            right: 16px;
+            width: 350px;
+            height: 500px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            border-radius: 16px;
+            overflow: hidden;
+            display: none;
+            z-index: 1000;
+            transition: all 0.3s ease-in-out;
+            transform: translateY(20px);
+            opacity: 0;
+        }
+        #chatbot-container.active {
+            display: flex;
+            flex-direction: column;
+            transform: translateY(0);
+            opacity: 1;
+        }
+        #chatbot-toggle {
+            position: fixed;
+            bottom: 80px; /* Above bottom nav */
+            right: 20px;
+            z-index: 1001;
+        }
+        #chat-messages::-webkit-scrollbar { width: 4px; }
+        #chat-messages::-webkit-scrollbar-thumb { background: #cbd5e1; }
+        
+        /* Modal Styles */
+        .modal {
+            display: none; /* Hidden by default */
+        }
+        .modal.active {
+            display: flex; /* Show when active */
+        }
+
+        /* Voice Button Pulse */
+        .listening {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+
+        /* Skill Hub Styles */
+        .skill-detail {
+            display: none;
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 antialiased">
+
+    <!-- 
+      ================================================
+      TOP HEADER
+      ================================================ 
+    -->
+    <header class="bg-primary text-white sticky top-0 z-50 shadow-md" style="background-color: var(--color-primary);">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <!-- Logo -->
+            <div class="flex items-center gap-2">
+                <svg class="h-8 w-8 transition-transform duration-300 hover:rotate-12 hover:scale-110" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5.58579 14.4142C4.80474 15.1953 4.80474 16.4616 5.58579 17.2426C6.36683 18.0237 7.63316 18.0237 8.41421 17.2426L12 13.6569L15.5858 17.2426C16.3668 18.0237 17.6332 18.0237 18.4142 17.2426C19.1953 16.4616 19.1953 15.1953 18.4142 14.4142L12.8284 8.82843C12.4379 8.4379 11.5621 8.4379 11.1716 8.82843L5.58579 14.4142Z" fill="#facc15"/>
+                    <path d="M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM11.1716 5.17157C11.5621 4.78105 12.4379 4.78105 12.8284 5.17157L18.4142 10.7574C19.1953 11.5384 19.1953 12.8047 18.4142 13.5858C17.6332 14.3668 16.3668 14.3668 15.5858 13.5858L12 9.99999L8.41421 13.5858C7.63316 14.3668 6.36683 14.3668 5.58579 13.5858C4.80474 12.8047 4.80474 11.5384 5.58579 10.7574L11.1716 5.17157Z" fill="url(#leafGradient)"/>
+                    <defs>
+                        <linearGradient id="leafGradient" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#FFFFFF"/>
+                            <stop offset="1" stop-color="#E5E7EB"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span class="text-2xl font-bold" data-lang-en="KrishiSetu" data-lang-hi="कृषिसेतु">कृषिसेतु</span>
+            </div>
+            
+            <!-- Language Toggle -->
+            <div class="flex items-center bg-green-700 rounded-full p-0.5">
+                <button onclick="setLanguage('en')" id="lang-en" class="lang-btn px-3 py-1 text-sm font-medium rounded-full text-green-200" data-lang-en="EN" data-lang-hi="EN">EN</button>
+                <button onclick="setLanguage('hi')" id="lang-hi" class="lang-btn px-3 py-1 text-sm font-medium rounded-full bg-white text-primary" style="color: var(--color-primary);" data-lang-en="हिंदी" data-lang-hi="हिंदी">हिंदी</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 
+      ================================================
+      MAIN CONTENT AREA
+      ================================================ 
+    -->
+    <main class="container mx-auto p-4 pb-24"> <!-- Padding-bottom for bottom nav -->
+
+        <!-- 
+          PAGE: HOME (DASHBOARD)
+        -->
+        <div id="page-home" class="page active">
+            <!-- Welcome Message -->
+            <div class="p-6 bg-white rounded-lg shadow-sm text-center mb-6">
+                <h1 class="text-2xl font-bold text-primary" style="color: var(--color-primary);" data-lang-en="Welcome to KrishiSetu!" data-lang-hi="कृषिसेतु में आपका स्वागत है!">कृषिसेतु में आपका स्वागत है!</h1>
+                <p class="text-gray-600 mt-1" data-lang-en="Genuine inputs, best price, delivered to your farm." data-lang-hi="असली इनपुट, सबसे अच्छी कीमत, आपके खेत तक।">असली इनपुट, सबसे अच्छी कीमत, आपके खेत तक।</p>
+            </div>
+
+            <!-- Voice Search Bar -->
+            <div class="mb-6">
+                <label for="voice-search" class="sr-only" data-lang-en="Search for Inputs" data-lang-hi="इनपुट खोजें">इनपुट खोजें</label>
+                <div class="relative">
+                    <input type="text" id="voice-search" class="w-full pl-4 pr-12 py-4 text-base text-gray-700 bg-white border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-primary" style="--tw-ring-color: var(--color-primary);" placeholder="Search for seeds, fertilizer..." data-lang-en-placeholder="Search for seeds, fertilizer..." data-lang-hi-placeholder="बीज, खाद, दवाइयां खोजें...">
+                    <button class="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-primary rounded-full text-white hover:bg-green-700" style="background-color: var(--color-primary);" onclick="alert('Voice Search Activated!')" aria-label="Voice Search">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm5 3a1 1 0 11-2 0V4a1 1 0 112 0v3zm-3.83 5.43a1 1 0 01.17 1.4L7.5 14.5A4.97 4.97 0 0010 16a4.97 4.97 0 002.5-1.07l-.839-.67a1 1 0 01.17-1.4l.001-.001.001-.001a1 1 0 011.4-.17l.67.839A6.97 6.97 0 0110 18a6.97 6.97 0 01-4.83-2.17l.67-.839a1 1 0 011.4.17l.001.001.001.001zM10 13a1 1 0 011 1v1.58c0 .83.67 1.5 1.5 1.5.83 0 1.5-.67 1.5-1.5V14a1 1 0 112 0v1.58a3.5 3.5 0 01-3.5 3.5 3.5 3.5 0 01-3.5-3.5V14a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Icon Menu -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <button onclick="showPage('shop')" class="flex flex-col items-center justify-center p-6 bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300">
+                    <div class="p-4 bg-light rounded-full" style="background-color: var(--color-light);">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-primary" style="color: var(--color-primary);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <span class="mt-3 font-semibold text-gray-700" data-lang-en="Buy Inputs" data-lang-hi="इनपुट खरीदें">इनपुट खरीदें</span>
+                </button>
+                
+                <button onclick="toggleChatbot()" class="flex flex-col items-center justify-center p-6 bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300">
+                    <div class="p-4 bg-light rounded-full" style="background-color: var(--color-light);">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-primary" style="color: var(--color-primary);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                    </div>
+                    <span class="mt-3 font-semibold text-gray-700" data-lang-en="Ask Expert" data-lang-hi="विशेषज्ञ से पूछें">विशेषज्ञ से पूछें</span>
+                </button>
+
+                <button onclick="showPage('account')" class="flex flex-col items-center justify-center p-6 bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300">
+                    <div class="p-4 bg-light rounded-full" style="background-color: var(--color-light);">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-primary" style="color: var(--color-primary);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        </svg>
+                    </div>
+                    <span class="mt-3 font-semibold text-gray-700" data-lang-en="My Orders" data-lang-hi="मेरे आर्डर">मेरे आर्डर</span>
+                </button>
+
+                <button onclick="showPage('partners')" class="flex flex-col items-center justify-center p-6 bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300">
+                    <div class="p-4 bg-light rounded-full" style="background-color: var(--color-light);">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-primary" style="color: var(--color-primary);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-2.13l-2.114 1.778A3 3 0 0013 20h4zm-9 0H4v-2a3 3 0 015.356-2.13l2.114 1.778A3 3 0 0111 20H8zm-6 0h.01M12 6a3 3 0 11-6 0 3 3 0 016 0zm1 0a3 3 0 11-6 0 3 3 0 016 0zm-5 6a3 3 0 100 6 3 3 0 000-6zm11 0a3 3 0 100 6 3 3 0 000-6z" />
+                        </svg>
+                    </div>
+                    <span class="mt-3 font-semibold text-gray-700" data-lang-en="FPO Connect" data-lang-hi="FPO कनेक्ट">FPO कनेक्ट</span>
+                </button>
+            </div>
+            
+            <!-- AI Recommendation Section -->
+            <div class="mt-6 p-4 bg-white rounded-lg shadow-sm">
+                <h2 class="text-lg font-bold text-primary mb-3" style="color: var(--color-primary);" data-lang-en="AI Product Recommendation" data-lang-hi="AI उत्पाद सुझाव">AI उत्पाद सुझाव</h2>
+                <div class="space-y-3">
+                    <div>
+                        <label for="ai-location" class="block text-sm font-medium text-gray-700" data-lang-en="Your Location" data-lang-hi="आपका स्थान">आपका स्थान</label>
+                        <select id="ai-location" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                            <option value="palamu" data-lang-en="Palamu" data-lang-hi="पलामू">पलामू</option>
+                            <option value="ramgarh" data-lang-en="Ramgarh" data-lang-hi="रामगढ़">रामगढ़</option>
+                            <option value="hazaribagh" data-lang-en="Hazaribagh" data-lang-hi="हजारीबाग">हजारीबाग</option>
+                            <option value="other" data-lang-en="Other" data-lang-hi="अन्य">अन्य</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="ai-crop" class="block text-sm font-medium text-gray-700" data-lang-en="Your Main Crop" data-lang-hi="आपकी मुख्य फसल">आपकी मुख्य फसल</label>
+                        <select id="ai-crop" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                            <option value="arhar" data-lang-en="Pigeon Pea (Arhar)" data-lang-hi="अरहर (रहर)">अरहर (रहर)</option>
+                            <option value="paddy" data-lang-en="Paddy (Dhan)" data-lang-hi="धान (पैडी)">धान (पैडी)</option>
+                            <option value="maize" data-lang-en="Maize (मक्का)" data-lang-hi="मक्का (मैज़)">मक्का (मैज़)</option>
+                            <option value="vegetables" data-lang-en="Vegetables" data-lang-hi="सब्जियां">सब्जियां</option>
+                        </select>
+                    </div>
+                    <button onclick="getAIProductRecommendation()" class="w-full bg-secondary text-primary-dark font-bold py-2 px-4 rounded-lg shadow" style="background-color: var(--color-secondary); color: var(--color-primary);" data-lang-en="Get Suggestion" data-lang-hi="सुझाव प्राप्त करें">सुझाव प्राप्त करें</button>
+                    <div id="ai-product-result" class="mt-3 p-3 bg-light rounded-md text-sm" style="background-color: var(--color-light); display: none;"></div>
+                </div>
+            </div>
+
+        </div> <!-- /page-home -->
+
+        <!-- 
+          PAGE: SHOP (MARKETPLACE)
+        -->
+        <div id="page-shop" class="page">
+            <h1 class="text-2xl font-bold text-primary mb-4" style="color: var(--color-primary);" data-lang-en="Shop Agri-Inputs" data-lang-hi="कृषि इनपुट खरीदें">कृषि इनपुट खरीदें</h1>
+
+            <!-- Category Filters -->
+            <div class="mb-4 flex space-x-2 overflow-x-auto whitespace-nowrap pb-2">
+                <button onclick="filterMarketplace('all')" class="market-filter-btn bg-primary text-white py-2 px-4 rounded-full text-sm font-medium" style="background-color: var(--color-primary);">
+                    <span data-lang-en="All" data-lang-hi="सब">सब</span>
+                </button>
+                <button onclick="filterMarketplace('seeds')" class="market-filter-btn bg-white text-gray-700 py-2 px-4 rounded-full text-sm font-medium border">
+                    <span data-lang-en="Seeds" data-lang-hi="बीज">बीज</span>
+                </button>
+                <button onclick="filterMarketplace('fertilizer')" class="market-filter-btn bg-white text-gray-700 py-2 px-4 rounded-full text-sm font-medium border">
+                    <span data-lang-en="Fertilizer" data-lang-hi="उर्वरक">उर्वरक</span>
+                </button>
+                <button onclick="filterMarketplace('pesticide')" class="market-filter-btn bg-white text-gray-700 py-2 px-4 rounded-full text-sm font-medium border">
+                    <span data-lang-en="Pesticide" data-lang-hi="कीटनाशक">कीटनाशक</span>
+                </button>
+                <button onclick="filterMarketplace('machinery')" class="market-filter-btn bg-white text-gray-700 py-2 px-4 rounded-full text-sm font-medium border">
+                    <span data-lang-en="Machinery" data-lang-hi="मशीनरी">मशीनरी</span>
+                </button>
+            </div>
+
+            <!-- Product Grid -->
+            <div id="product-grid" class="grid grid-cols-2 gap-4">
+                <!-- Sample Product 1: Seeds -->
+                <div class="market-item bg-white rounded-lg shadow-sm overflow-hidden border" data-category="seeds">
+                    <img src="https://placehold.co/300x300/e2e8f0/333?text=Certified+Seeds" alt="Seeds" class="w-full h-32 object-cover">
+                    <div class="p-3">
+                        <span class="inline-block bg-green-100 text-green-800 text-xs px-2 rounded-full uppercase font-semibold tracking-wide" data-lang-en="Verified Supplier" data-lang-hi="सत्यापित आपूर्तिकर्ता">सत्यापित आपूर्तिकर्ता</span>
+                        <h3 class="font-bold text-base mt-2 truncate" data-lang-en="Pusa Arhar-16 Seeds (1kg)" data-lang-hi="पूसा अरहर-16 बीज (1 किग्रा)">पूसा अरहर-16 बीज (1 किग्रा)</h3>
+                        <div class="mt-2">
+                            <span class="text-sm text-gray-500 line-through" data-lang-en="Local: ₹220" data-lang-hi="स्थानीय: ₹220">स्थानीय: ₹220</span>
+                            <span class="block text-lg font-bold text-primary" style="color: var(--color-primary);" data-lang-en="KrishiSetu: ₹195" data-lang-hi="कृषिसेतु: ₹195">कृषिसेतु: ₹195</span>
+                        </div>
+                        <button class="mt-3 w-full bg-secondary text-primary font-bold py-2 px-3 rounded-lg text-sm" style="background-color: var(--color-secondary); color: var(--color-primary);" data-lang-en="Add to Cart" data-lang-hi="कार्ट में डालें">कार्ट में डालें</button>
+                    </div>
+                </div>
+
+                <!-- Sample Product 2: Fertilizer -->
+                <div class="market-item bg-white rounded-lg shadow-sm overflow-hidden border" data-category="fertilizer">
+                    <img src="https://placehold.co/300x300/e2e8f0/333?text=Fertilizer+Bag" alt="Fertilizer" class="w-full h-32 object-cover">
+                    <div class="p-3">
+                        <span class="inline-block bg-green-100 text-green-800 text-xs px-2 rounded-full uppercase font-semibold tracking-wide" data-lang-en="Verified Supplier" data-lang-hi="सत्यापित आपूर्तिकर्ता">सत्यापित आपूर्तिकर्ता</span>
+                        <h3 class="font-bold text-base mt-2 truncate" data-lang-en="IFFCO Urea (45kg Bag)" data-lang-hi="इफको यूरिया (45 किग्रा)">इफको यूरिया (45 किग्रा)</h3>
+                        <div class="mt-2">
+                            <span class="text-sm text-gray-500 line-through" data-lang-en="Local: ₹300" data-lang-hi="स्थानीय: ₹300">स्थानीय: ₹300</span>
+                            <span class="block text-lg font-bold text-primary" style="color: var(--color-primary);" data-lang-en="KrishiSetu: ₹266" data-lang-hi="कृषिसेतु: ₹266">कृषिसेतु: ₹266</span>
+                        </div>
+                        <button class="mt-3 w-full bg-secondary text-primary font-bold py-2 px-3 rounded-lg text-sm" style="background-color: var(--color-secondary); color: var(--color-primary);" data-lang-en="Add to Cart" data-lang-hi="कार्ट में डालें">कार्ट में डालें</button>
+                    </div>
+                </div>
+                
+                <!-- Sample Product 3: Pesticide -->
+                <div class="market-item bg-white rounded-lg shadow-sm overflow-hidden border" data-category="pesticide">
+                    <img src="https://placehold.co/300x300/e2e8f0/333?text=Pesticide+Bottle" alt="Pesticide" class="w-full h-32 object-cover">
+                    <div class="p-3">
+                        <span class="inline-block bg-green-100 text-green-800 text-xs px-2 rounded-full uppercase font-semibold tracking-wide" data-lang-en="Verified Supplier" data-lang-hi="सत्यापित आपूर्तिकर्ता">सत्यापित आपूर्तिकर्ता</span>
+                        <h3 class="font-bold text-base mt-2 truncate" data-lang-en="Neem Oil (1 Ltr)" data-lang-hi="नीम का तेल (1 लीटर)">नीम का तेल (1 लीटर)</h3>
+                        <div class="mt-2">
+                            <span class="text-sm text-gray-500 line-through" data-lang-en="Local: ₹450" data-lang-hi="स्थानीय: ₹450">स्थानीय: ₹450</span>
+                            <span class="block text-lg font-bold text-primary" style="color: var(--color-primary);" data-lang-en="KrishiSetu: ₹399" data-lang-hi="कृषिसेतु: ₹399">कृषिसेतु: ₹399</span>
+                        </div>
+                        <button class="mt-3 w-full bg-secondary text-primary font-bold py-2 px-3 rounded-lg text-sm" style="background-color: var(--color-secondary); color: var(--color-primary);" data-lang-en="Add to Cart" data-lang-hi="कार्ट में डालें">कार्ट में डालें</button>
+                    </div>
+                </div>
+
+                <!-- Sample Product 4: Machinery -->
+                <div class="market-item bg-white rounded-lg shadow-sm overflow-hidden border" data-category="machinery">
+                    <img src="https://placehold.co/300x300/e2e8f0/333?text=Agri+Sprayer" alt="Machinery" class="w-full h-32 object-cover">
+                    <div class="p-3">
+                        <span class="inline-block bg-green-100 text-green-800 text-xs px-2 rounded-full uppercase font-semibold tracking-wide" data-lang-en="Verified Supplier" data-lang-hi="सत्यापित आपूर्तिकर्ता">सत्यापित आपूर्तिकर्ता</span>
+                        <h3 class="font-bold text-base mt-2 truncate" data-lang-en="Knapsack Sprayer (16L)" data-lang-hi="नैपसैक स्प्रेयर (16L)">नैपसैक स्प्रेयर (16L)</h3>
+                        <div class="mt-2">
+                            <span class="text-sm text-gray-500 line-through" data-lang-en="Local: ₹1800" data-lang-hi="स्थानीय: ₹1800">स्थानीय: ₹1800</span>
+                            <span class="block text-lg font-bold text-primary" style="color: var(--color-primary);" data-lang-en="KrishiSetu: ₹1450" data-lang-hi="कृषिसेतु: ₹1450">कृषिसेतु: ₹1450</span>
+                        </div>
+                        <button class="mt-3 w-full bg-secondary text-primary font-bold py-2 px-3 rounded-lg text-sm" style="background-color: var(--color-secondary); color: var(--color-primary);" data-lang-en="Add to Cart" data-lang-hi="कार्ट में डालें">कार्ट में डालें</button>
+                    </div>
+                </div>
+
+            </div> <!-- /product-grid -->
+            
+            <!-- Realtime Firebase products will be loaded here -->
+            <div id="marketplace-list" class="grid grid-cols-2 gap-4"></div>
+            
+        </div> <!-- /page-shop -->
+
+        <!-- 
+          PAGE: LEARN (SKILL HUB)
+        -->
+        <div id="page-learn" class="page">
+            <h1 class="text-2xl font-bold text-primary mb-4" style="color: var(--color-primary);" data-lang-en="Learn New Skills" data-lang-hi="नए कौशल सीखें">नए कौशल सीखें</h1>
+            
+            <!-- Skill Grid -->
+            <div class="grid grid-cols-3 gap-3 text-center">
+                <!-- Row 1 -->
+                <button onclick="showSkillDetail('organic')" class="skill-btn p-3 bg-white rounded-lg shadow-sm border">
+                    <img src="https://placehold.co/100x100/e2e8f0/333?text=Organic" class="w-16 h-16 mx-auto rounded-full">
+                    <span class="block mt-2 text-sm font-medium text-gray-700" data-lang-en="Organic Farming" data-lang-hi="जैविक खेती">जैविक खेती</span>
+                </button>
+                <button onclick="showSkillDetail('mushroom')" class="skill-btn p-3 bg-white rounded-lg shadow-sm border">
+                    <img src="https://placehold.co/100x100/e2e8f0/333?text=Mushroom" class="w-16 h-16 mx-auto rounded-full">
+                    <span class="block mt-2 text-sm font-medium text-gray-700" data-lang-en="Mushroom" data-lang-hi="मशरूम">मशरूम</span>
+                </button>
+                <button onclick="showSkillDetail('beekeeping')" class="skill-btn p-3 bg-white rounded-lg shadow-sm border">
+                    <img src="https://placehold.co/100x100/e2e8f0/333?text=Bee" class="w-16 h-16 mx-auto rounded-full">
+                    <span class="block mt-2 text-sm font-medium text-gray-700" data-lang-en="Bee Keeping" data-lang-hi="मधुमक्खी पालन">मधुमक्खी पालन</span>
+                </button>
+                <!-- Row 2 -->
+                <button onclick="showSkillDetail('livestock')" class="skill-btn p-3 bg-white rounded-lg shadow-sm border">
+                    <img src="https://placehold.co/100x100/e2e8f0/333?text=Goat" class="w-16 h-16 mx-auto rounded-full">
+                    <span class="block mt-2 text-sm font-medium text-gray-700" data-lang-en="Livestock" data-lang-hi="पशुपालन">पशुपालन</span>
+                </button>
+                <button onclick="showSkillDetail('digital')" class="skill-btn p-3 bg-white rounded-lg shadow-sm border">
+                    <img src="https://placehold.co/100x100/e2e8f0/333?text=Mobile" class="w-16 h-16 mx-auto rounded-full">
+                    <span class="block mt-2 text-sm font-medium text-gray-700" data-lang-en="Digital Skills" data-lang-hi="डिजिटल कौशल">डिजिटल कौशल</span>
+                </button>
+                <button onclick="showSkillDetail('processing')" class="skill-btn p-3 bg-white rounded-lg shadow-sm border">
+                    <img src="https://placehold.co/100x100/e2e8f0/333?text=Processing" class="w-16 h-16 mx-auto rounded-full">
+                    <span class="block mt-2 text-sm font-medium text-gray-700" data-lang-en="Processing" data-lang-hi="प्रसंस्करण">प्रसंस्करण</span>
+                </button>
+                <!-- Row 3 -->
+                <button onclick="showSkillDetail('bamboo')" class="skill-btn p-3 bg-white rounded-lg shadow-sm border">
+                    <img src="https://placehold.co/100x100/e2e8f0/333?text=Bamboo" class="w-16 h-16 mx-auto rounded-full">
+                    <span class="block mt-2 text-sm font-medium text-gray-700" data-lang-en="Bamboo Craft" data-lang-hi="बांस शिल्प">बांस शिल्प</span>
+                </button>
+                <button onclick="showSkillDetail('sericulture')" class="skill-btn p-3 bg-white rounded-lg shadow-sm border">
+                    <img src="https://placehold.co/100x100/e2e8f0/333?text=Silk" class="w-16 h-16 mx-auto rounded-full">
+                    <span class="block mt-2 text-sm font-medium text-gray-700" data-lang-en="Sericulture" data-lang-hi="रेशम उत्पादन">रेशम उत्पादन</span>
+                </button>
+                <button onclick="showSkillDetail('painting')" class="skill-btn p-3 bg-white rounded-lg shadow-sm border">
+                    <img src="https://placehold.co/100x100/e2e8f0/333?text=Art" class="w-16 h-16 mx-auto rounded-full">
+                    <span class="block mt-2 text-sm font-medium text-gray-700" data-lang-en="Tribal Painting" data-lang-hi="आदिवासी चित्रकला">आदिवासी चित्रकला</span>
+                </button>
+            </div>
+
+            <!-- Skill Detail Sections -->
+            <div id="skill-detail-container" class="mt-4">
+                <!-- Organic Farming -->
+                <div id="skill-organic" class="skill-detail p-4 bg-white rounded-lg shadow-sm">
+                    <h3 class="text-xl font-bold text-primary" style="color: var(--color-primary);" data-lang-en="Organic Farming" data-lang-hi="जैविक खेती">जैविक खेती</h3>
+                    <p class="mt-2 text-gray-600 text-sm" data-lang-en="Learn to grow crops without chemical fertilizers and pesticides. Improve soil health and get better prices for your produce." data-lang-hi="रासायनिक उर्वरकों और कीटनाशकों के बिना फसल उगाना सीखें। मिट्टी के स्वास्थ्य में सुधार करें और अपनी उपज के लिए बेहतर मूल्य प्राप्त करें।">...</p>
+                    <div class="aspect-w-16 aspect-h-9 mt-4 rounded-lg overflow-hidden">
+                        <iframe src="https://www.youtube.com/embed/2qiNKen-rm0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="w-full h-full"></iframe>
+                    </div>
+                </div>
+                <!-- Other skill details... (mushroom, beekeeping, etc.) -->
+                <!-- Add other skill sections here similarly -->
+            </div>
+            
+        </div> <!-- /page-learn -->
+
+        <!-- 
+          PAGE: PARTNERS (FPO CONNECT)
+        -->
+        <div id="page-partners" class="page">
+            <h1 class="text-2xl font-bold text-primary mb-4" style="color: var(--color-primary);" data-lang-en="Our Partners" data-lang-hi="हमारे सहयोगी">हमारे सहयोगी</h1>
+            <p class="mb-4 text-gray-700" data-lang-en="We partner with trusted Farmer Producer Organizations (FPOs) and KVKs to bring you genuine products and reliable knowledge." data-lang-hi="हम आपको वास्तविक उत्पाद और विश्वसनीय ज्ञान लाने के लिए विश्वसनीय किसान उत्पादक संगठनों (FPO) और KVK के साथ साझेदारी करते हैं।">...</p>
+            
+            <div class="space-y-4">
+                <!-- Partner 1 -->
+                <div class="p-4 bg-white rounded-lg shadow-sm border flex items-center gap-4">
+                    <div class="p-3 bg-light rounded-full" style="background-color: var(--color-light);">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" style="color: var(--color-primary);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-2.13l-2.114 1.778A3 3 0 0013 20h4zm-9 0H4v-2a3 3 0 015.356-2.13l2.114 1.778A3 3 0 0111 20H8zm-6 0h.01M12 6a3 3 0 11-6 0 3 3 0 016 0zm1 0a3 3 0 11-6 0 3 3 0 016 0zm-5 6a3 3 0 100 6 3 3 0 000-6zm11 0a3 3 0 100 6 3 3 0 000-6z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800">Betla FPO Limited</h3>
+                        <p class="text-gray-600" data-lang-en="1200+ Farmers Connected" data-lang-hi="1200+ किसान जुड़े हुए हैं">1200+ किसान जुड़े हुए हैं</p>
+                    </div>
+                </div>
+                <!-- Partner 2 -->
+                <div class="p-4 bg-white rounded-lg shadow-sm border flex items-center gap-4">
+                    <div class="p-3 bg-light rounded-full" style="background-color: var(--color-light);">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" style="color: var(--color-primary);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-2.13l-2.114 1.778A3 3 0 0013 20h4zm-9 0H4v-2a3 3 0 015.356-2.13l2.114 1.778A3 3 0 0111 20H8zm-6 0h.01M12 6a3 3 0 11-6 0 3 3 0 016 0zm1 0a3 3 0 11-6 0 3 3 0 016 0zm-5 6a3 3 0 100 6 3 3 0 000-6zm11 0a3 3 0 100 6 3 3 0 000-6z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800">Ramgarh FPO</h3>
+                        <p class="text-gray-600" data-lang-en="700+ Farmers Connected" data-lang-hi="700+ किसान जुड़े हुए हैं">700+ किसान जुड़े हुए हैं</p>
+                    </div>
+                </div>
+                <!-- Partner 3 -->
+                <div class="p-4 bg-white rounded-lg shadow-sm border flex items-center gap-4">
+                    <div class="p-3 bg-light rounded-full" style="background-color: var(--color-light);">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" style="color: var(--color-primary);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-2.13l-2.114 1.778A3 3 0 0013 20h4zm-9 0H4v-2a3 3 0 015.356-2.13l2.114 1.778A3 3 0 0111 20H8zm-6 0h.01M12 6a3 3 0 11-6 0 3 3 0 016 0zm1 0a3 3 0 11-6 0 3 3 0 016 0zm-5 6a3 3 0 100 6 3 3 0 000-6zm11 0a3 3 0 100 6 3 3 0 000-6z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800">Koyal Agro</h3>
+                        <p class="text-gray-600" data-lang-en="2000+ Farmers Connected" data-lang-hi="2000+ किसान जुड़े हुए हैं">2000+ किसान जुड़े हुए हैं</p>
+                    </div>
+                </div>
+                <!-- Partner 4 -->
+                <div class="p-4 bg-white rounded-lg shadow-sm border flex items-center gap-4">
+                    <div class="p-3 bg-light rounded-full" style="background-color: var(--color-light);">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" style="color: var(--color-primary);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-2.13l-2.114 1.778A3 3 0 0013 20h4zm-9 0H4v-2a3 3 0 015.356-2.13l2.114 1.778A3 3 0 0111 20H8zm-6 0h.01M12 6a3 3 0 11-6 0 3 3 0 016 0zm1 0a3 3 0 11-6 0 3 3 0 016 0zm-5 6a3 3 0 100 6 3 3 0 000-6zm11 0a3 3 0 100 6 3 3 0 000-6z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800">Pandu FPO</h3>
+                        <p class="text-gray-600" data-lang-en="2520+ Farmers Connected" data-lang-hi="2520+ किसान जुड़े हुए हैं">2520+ किसान जुड़े हुए हैं</p>
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- /page-partners -->
+
+        <!-- 
+          PAGE: ACCOUNT
+        -->
+        <div id="page-account" class="page">
+            <h1 class="text-2xl font-bold text-primary mb-4" style="color: var(--color-primary);" data-lang-en="My Account" data-lang-hi="मेरा खाता">मेरा खाता</h1>
+            
+            <div class="space-y-3">
+                <button class="w-full p-4 bg-white rounded-lg shadow-sm border flex justify-between items-center text-left">
+                    <span class="font-medium text-gray-700" data-lang-en="My Profile" data-lang-hi="मेरी प्रोफाइल">मेरी प्रोफाइल</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                </button>
+                <button class="w-full p-4 bg-white rounded-lg shadow-sm border flex justify-between items-center text-left">
+                    <span class="font-medium text-gray-700" data-lang-en="Order History" data-lang-hi="ऑर्डर इतिहास">ऑर्डर इतिहास</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                </button>
+                <button class="w-full p-4 bg-white rounded-lg shadow-sm border flex justify-between items-center text-left">
+                    <span class="font-medium text-gray-700" data-lang-en="Language" data-lang-hi="भाषा">भाषा</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                </button>
+                <button class="w-full p-4 bg-white rounded-lg shadow-sm border flex justify-between items-center text-left">
+                    <span class="font-medium text-red-600" data-lang-en="Logout" data-lang-hi="लॉग आउट">लॉग आउट</span>
+                </button>
+            </div>
+
+        </div> <!-- /page-account -->
+
+    </main>
+
+    <!-- 
+      ================================================
+      CHATBOT (Smart Sahyogi)
+      ================================================ 
+    -->
+    <button id="chatbot-toggle" onclick="toggleChatbot()" class="p-4 bg-primary rounded-full shadow-lg text-white" style="background-color: var(--color-primary);">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V5zM4 11a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM4 15a1 1 0 011-1h6a1 1 0 110 2H5a1 1 0 01-1-1z" clip-rule="evenodd" />
+        </svg>
+    </button>
+    
+    <div id="chatbot-container" class="bg-white">
+        <!-- Chat Header -->
+        <div class="p-4 bg-primary text-white flex justify-between items-center" style="background-color: var(--color-primary);">
+            <div>
+                <h3 class="font-bold text-lg" data-lang-en="Smart Sahyogi" data-lang-hi="स्मार्ट सहयोगी">स्मार्ट सहयोगी</h3>
+                <p class="text-xs text-green-200" data-lang-en="Your AI Assistant" data-lang-hi="आपका AI सहायक">आपका AI सहायक</p>
+            </div>
+            <button onclick="toggleChatbot()" class="text-green-200">&times;</button>
+        </div>
+        
+        <!-- Chat Messages -->
+        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-gray-50 space-y-3">
+            <div class="flex">
+                <div class="p-3 bg-primary text-white rounded-lg max-w-xs" style="background-color: var(--color-primary);">
+                    <p class="text-sm" data-lang-en="Hello! I am Smart Sahyogi. How can I help you? Ask me what inputs to buy!" data-lang-hi="नमस्ते! मैं स्मार्ट सहयोगी हूं। मैं आपकी कैसे मदद कर सकता हूँ? मुझसे पूछें कि कौन से इनपुट खरीदने हैं!">नमस्ते! मैं स्मार्ट सहयोगी हूं। मैं आपकी कैसे मदद कर सकता हूँ? मुझसे पूछें कि कौन से इनपुट खरीदने हैं!</p>
+                </div>
+            </div>
+            <!-- Messages will be added here -->
+        </div>
+        
+        <!-- Chat Input -->
+        <div class="p-3 bg-white border-t border-gray-200">
+            <div id="ai-form-container" class="hidden p-2 space-y-2">
+                <!-- AI recommendation form will be injected here by JS -->
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="text" id="chat-input" class="flex-1 p-2 border border-gray-300 rounded-lg" placeholder="Type or ask..." data-lang-en-placeholder="Type or ask..." data-lang-hi-placeholder="टाइप करें या पूछें...">
+                
+                <!-- Voice Button -->
+                <button id="voice-recognition-button" onclick="startVoiceRecognition()" class="p-3 text-primary" style="color: var(--color-primary);">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm5 3a1 1 0 11-2 0V4a1 1 0 112 0v3zm-3.83 5.43a1 1 0 01.17 1.4L7.5 14.5A4.97 4.97 0 0010 16a4.97 4.97 0 002.5-1.07l-.839-.67a1 1 0 01.17-1.4l.001-.001.001-.001a1 1 0 011.4-.17l.67.839A6.97 6.97 0 0110 18a6.97 6.97 0 01-4.83-2.17l.67-.839a1 1 0 011.4.17l.001.001.001.001zM10 13a1 1 0 011 1v1.58c0 .83.67 1.5 1.5 1.5.83 0 1.5-.67 1.5-1.5V14a1 1 0 112 0v1.58a3.5 3.5 0 01-3.5 3.5 3.5 3.5 0 01-3.5-3.5V14a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                
+                <!-- Send Button -->
+                <button id="chat-send" onclick="sendChatMessage()" class="p-3 bg-primary text-white rounded-lg" style="background-color: var(--color-primary);">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 
+      ================================================
+      BOTTOM NAVIGATION BAR
+      ================================================ 
+    -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div class="container mx-auto max-w-lg flex justify-around">
+            <button onclick="showPage('home')" class="bottom-nav-tab active flex-1 flex flex-col items-center justify-center p-3 text-gray-500 hover:text-primary" style="--tw-text-opacity: 1; color: var(--color-primary);">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span class="text-xs font-medium" data-lang-en="Home" data-lang-hi="होम">होम</span>
+            </button>
+            <button onclick="showPage('shop')" class="bottom-nav-tab flex-1 flex flex-col items-center justify-center p-3 text-gray-500 hover:text-primary" style="color: var(--text-gray-500);">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span class="text-xs font-medium" data-lang-en="Shop" data-lang-hi="खरीदें">खरीदें</span>
+            </button>
+            <button onclick="toggleChatbot()" class="bottom-nav-tab flex-1 flex flex-col items-center justify-center p-3 text-gray-500 hover:text-primary" style="color: var(--text-gray-500);">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <span class="text-xs font-medium" data-lang-en="Ask Expert" data-lang-hi="पूछें">पूछें</span>
+            </button>
+            <button onclick="showPage('learn')" class="bottom-nav-tab flex-1 flex flex-col items-center justify-center p-3 text-gray-500 hover:text-primary" style="color: var(--text-gray-500);">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="text-xs font-medium" data-lang-en="Learn" data-lang-hi="सीखें">सीखें</span>
+            </button>
+            <button onclick="showPage('account')" class="bottom-nav-tab flex-1 flex flex-col items-center justify-center p-3 text-gray-500 hover:text-primary" style="color: var(--text-gray-500);">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span class="text-xs font-medium" data-lang-en="Account" data-lang-hi="खाता">खाता</span>
+            </button>
+        </div>
+    </nav>
+    
+    
+    <!-- 
+      ================================================
+      MODALS
+      ================================================ 
+    -->
+    <!-- Offline App Suggestion Modal -->
+    <div id="offline-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 justify-center items-center">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm mx-4">
+            <h2 class="text-xl font-bold text-primary" style="color: var(--color-primary);" data-lang-en="Welcome to KrishiSetu!" data-lang-hi="कृषिसेतु में आपका स्वागत है!">कृषिसेतु में आपका स्वागत है!</h2>
+            <p class="mt-2 text-gray-600" data-lang-en="For the best experience with slow internet, download our Lite App." data-lang-hi="धीमे इंटरनेट के साथ बेहतरीन अनुभव के लिए, हमारा लाइट ऐप डाउनलोड करें।">धीमे इंटरनेट के साथ बेहतरीन अनुभव के लिए, हमारा लाइट ऐप डाउनलोड करें।</p>
+            <div class="mt-4 flex gap-3">
+                <button onclick="document.getElementById('offline-modal').classList.remove('active')" class="flex-1 bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg" data-lang-en="Later" data-lang-hi="बाद में">बाद में</button>
+                <button onclick="alert('Download started!'); document.getElementById('offline-modal').classList.remove('active')" class="flex-1 bg-primary text-white font-bold py-2 px-4 rounded-lg" style="background-color: var(--color-primary);" data-lang-en="Download" data-lang-hi="डाउनलोड करें">डाउनलोड करें</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 
+      ================================================
+      JAVASCRIPT
+      ================================================ 
+    -->
+    <script type="module">
+        // Firebase Imports - Leave these for future database connection
+        // You will need to add your own Firebase config object here
+        // import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        // import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        
+        let db, auth;
+        let currentLang = 'hi'; // Default language
+        
+        // --- Firebase (Mockup) ---
+        // This is where you would initialize Firebase
+        // For this prototype, we will just use static data
+        
+        /* // Example of Real Firebase Init:
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        */
+        
+        console.log("KrishiSetu App Initialized (Prototype Mode)");
+
+        // --- Page Navigation ---
+        const pages = document.querySelectorAll('.page');
+        const navButtons = document.querySelectorAll('.bottom-nav-tab');
+        
+        window.showPage = (pageId) => {
+            // Hide all pages
+            pages.forEach(page => page.classList.remove('active'));
+            
+            // Show target page
+            const targetPage = document.getElementById(`page-${pageId}`);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            }
+            
+            // Update nav button active state
+            navButtons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('onclick').includes(`'${pageId}'`)) {
+                    btn.classList.add('active');
+                    btn.style.color = 'var(--color-primary)';
+                } else {
+                    btn.style.color = 'var(--text-gray-500)';
+                }
+            });
+
+            // Special case for 'shop' -> 'home'
+            if (pageId === 'home') {
+                navButtons[0].classList.add('active');
+                navButtons[0].style.color = 'var(--color-primary)';
+            }
+        }
+
+        // --- Language Toggle ---
+        const langElements = document.querySelectorAll('[data-lang-en], [data-lang-hi]');
+        const langBtns = {
+            en: document.getElementById('lang-en'),
+            hi: document.getElementById('lang-hi')
+        };
+        
+        window.setLanguage = (lang) => {
+            currentLang = lang;
+            
+            // Update button styles
+            if (lang === 'en') {
+                langBtns.en.classList.add('bg-white', 'text-primary');
+                langBtns.en.style.color = 'var(--color-primary)';
+                langBtns.hi.classList.remove('bg-white', 'text-primary');
+                langBtns.hi.style.color = '';
+            } else {
+                langBtns.hi.classList.add('bg-white', 'text-primary');
+                langBtns.hi.style.color = 'var(--color-primary)';
+                langBtns.en.classList.remove('bg-white', 'text-primary');
+                langBtns.en.style.color = '';
+            }
+            
+            // Update all text elements
+            langElements.forEach(el => {
+                const text = el.getAttribute(`data-lang-${lang}`);
+                if (text) {
+                    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                        const placeholderKey = `data-lang-${lang}-placeholder`;
+                        if (el.hasAttribute(placeholderKey)) {
+                            el.placeholder = el.getAttribute(placeholderKey);
+                        }
+                    } else {
+                        el.textContent = text;
+                    }
+                }
+            });
+        }
+
+        // --- Skill Hub Logic ---
+        const skillDetailIds = ['organic', 'mushroom', 'beekeeping', 'livestock', 'digital', 'processing', 'bamboo', 'sericulture', 'painting'];
+        const skillDetails = {};
+        skillDetailIds.forEach(id => {
+            skillDetails[id] = document.getElementById(`skill-${id}`);
+        });
+
+        window.showSkillDetail = (skillId) => {
+            let wasActive = skillDetails[skillId] && skillDetails[skillId].style.display === 'block';
+            
+            // Hide all details
+            skillDetailIds.forEach(id => {
+                if (skillDetails[id]) skillDetails[id].style.display = 'none';
+            });
+            
+            // Show target detail if it wasn't already active
+            if (skillDetails[skillId] && !wasActive) {
+                skillDetails[skillId].style.display = 'block';
+            }
+        }
+        
+        // --- Marketplace Filter Logic ---
+        window.filterMarketplace = (category) => {
+            const items = document.querySelectorAll('.market-item');
+            const buttons = document.querySelectorAll('.market-filter-btn');
+            
+            items.forEach(item => {
+                if (category === 'all' || item.dataset.category === category) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            buttons.forEach(btn => {
+                if (btn.getAttribute('onclick').includes(`'${category}'`)) {
+                    btn.classList.add('bg-primary', 'text-white');
+                    btn.style.backgroundColor = 'var(--color-primary)';
+                    btn.style.color = 'white';
+                } else {
+                    btn.classList.remove('bg-primary', 'text-white');
+                    btn.style.backgroundColor = 'white';
+                    btn.style.color = '#374151'; // text-gray-700
+                }
+            });
+        }
+
+        // --- Chatbot Logic ---
+        const chatbotContainer = document.getElementById('chatbot-container');
+        const chatbotToggle = document.getElementById('chatbot-toggle');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const aiFormContainer = document.getElementById('ai-form-container');
+        
+        window.toggleChatbot = () => {
+            chatbotContainer.classList.toggle('active');
+            if(chatbotContainer.classList.contains('active')) {
+                chatbotToggle.style.display = 'none';
+            } else {
+                chatbotToggle.style.display = 'block';
+            }
+        }
+        
+        window.sendChatMessage = () => {
+            const message = chatInput.value.trim();
+            if (message === '') return;
+            
+            appendChatMessage(message, 'user');
+            chatInput.value = '';
+            
+            // AI Response
+            setTimeout(() => {
+                getAIResponse(message);
+            }, 500);
+        }
+        
+        // Handle 'Enter' key
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+
+        const appendChatMessage = (message, sender) => {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('flex');
+            if (sender === 'user') {
+                msgDiv.classList.add('justify-end');
+                msgDiv.innerHTML = `<div class="p-3 bg-gray-200 text-gray-800 rounded-lg max-w-xs"><p class="text-sm">${message}</p></div>`;
+            } else {
+                msgDiv.innerHTML = `<div class="p-3 bg-primary text-white rounded-lg max-w-xs" style="background-color: var(--color-primary);"><p class="text-sm">${message}</p></div>`;
+            }
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll
+        }
+        
+        const getAIResponse = (message) => {
+            const msgLower = message.toLowerCase();
+            let response = currentLang === 'hi' ? "मुझे समझ नहीं आया।" : "I'm not sure I understand.";
+            aiFormContainer.innerHTML = '';
+            aiFormContainer.classList.add('hidden');
+
+            if (msgLower.includes('recommend') || msgLower.includes('सुझाव')) {
+                response = currentLang === 'hi' ? "ज़रूर! कृपया अपनी जानकारी प्रदान करें:" : "Sure! Please provide your details:";
+                showAIFormInChat();
+            } else if (msgLower.includes('hello') || msgLower.includes('hi') || msgLower.includes('नमस्ते')) {
+                response = currentLang === 'hi' ? "नमस्ते! मैं आपकी क्या मदद कर सकता हूँ?" : "Hello! How can I help you?";
+            } else if (msgLower.includes('palamu') || msgLower.includes('arhar')) {
+                response = currentLang === 'hi' 
+                    ? "पलामू में अरहर के लिए, मैं 'पूसा अरहर-16' बीज की सलाह दूँगा। यह अधिक उपज देने वाली किस्म है। आप इसे 'शॉप' पेज पर पा सकते हैं।" 
+                    : "For Arhar in Palamu, I recommend 'Pusa Arhar-16' seeds. It's a high-yield variety. You can find it on the 'Shop' page.";
+            } else if (msgLower.includes('fake') || msgLower.includes('असली')) {
+                response = currentLang === 'hi' 
+                    ? "कृषिसेतु पर सभी उत्पाद 100% असली हैं। हम सीधे सत्यापित FPOs और कंपनियों से खरीदते हैं।" 
+                    : "All products on KrishiSetu are 100% genuine. We source directly from verified FPOs and companies.";
+            } else if (msgLower.includes('delivery') || msgLower.includes('डिलीवरी')) {
+                response = currentLang === 'hi' 
+                    ? "डिलीवरी में आमतौर पर 3-5 दिन लगते हैं। हम शिप्राकेट जैसे भागीदारों के माध्यम से आपके गांव तक पहुंचाते हैं।" 
+                    : "Delivery usually takes 3-5 days. We deliver to your village via partners like Shiprocket.";
+            }
+            
+            appendChatMessage(response, 'bot');
+        }
+
+        const showAIFormInChat = () => {
+            aiFormContainer.classList.remove('hidden');
+            const formHTML = `
+                <select id="chat-ai-location" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    <option value="palamu">${currentLang === 'hi' ? 'पलामू' : 'Palamu'}</option>
+                    <option value="ramgarh">${currentLang === 'hi' ? 'रामगढ़' : 'Ramgarh'}</option>
+                </select>
+                <select id="chat-ai-crop" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    <option value="arhar">${currentLang === 'hi' ? 'अरहर' : 'Pigeon Pea (Arhar)'}</option>
+                    <option value="paddy">${currentLang === 'hi' ? 'धान' : 'Paddy'}</option>
+                </select>
+                <button onclick="getChatAIRecommendation()" class="w-full bg-secondary text-primary font-bold py-2 px-4 rounded-lg" style="background-color: var(--color-secondary); color: var(--color-primary);">${currentLang === 'hi' ? 'सुझाव दें' : 'Get Suggestion'}</button>
+            `;
+            aiFormContainer.innerHTML = formHTML;
+        }
+
+        window.getChatAIRecommendation = () => {
+            const location = document.getElementById('chat-ai-location').value;
+            const crop = document.getElementById('chat-ai-crop').value;
+            let result = "";
+
+            if (location === 'palamu' && crop === 'arhar') {
+                result = currentLang === 'hi' 
+                    ? "<b>सुझाव:</b> पलामू में अरहर के लिए, 'पूसा अरहर-16' बीज (1 किग्रा) का प्रयोग करें। यह सूखा-सहिष्णु है।<br><br><b>आपको इसकी आवश्यकता होगी:</b><br>1. <a href='#' onclick=\"showPage('shop'); filterMarketplace('seeds');\" class='text-blue-600 underline'>पूसा अरहर-16 बीज</a><br>2. <a href='#' onclick=\"showPage('shop'); filterMarketplace('fertilizer');\" class='text-blue-600 underline'>DAP उर्वरक</a>"
+                    : "<b>Recommendation:</b> For Arhar in Palamu, use 'Pusa Arhar-16' seeds (1kg). It is drought-tolerant.<br><br><b>You will need:</b><br>1. <a href='#' onclick=\"showPage('shop'); filterMarketplace('seeds');\" class='text-blue-600 underline'>Pusa Arhar-16 Seeds</a><br>2. <a href='#' onclick=\"showPage('shop'); filterMarketplace('fertilizer');\" class='text-blue-600 underline'>DAP Fertilizer</a>";
+            } else {
+                result = currentLang === 'hi' ? "इस फसल के लिए, मैं एक संतुलित NPK उर्वरक का उपयोग करने की सलाह दूँगा।" : "For this crop, I would recommend using a balanced NPK fertilizer.";
+            }
+
+            appendChatMessage(result, 'bot');
+            aiFormContainer.innerHTML = '';
+            aiFormContainer.classList.add('hidden');
+        }
+        
+        // --- AI Recommendation on Home Page ---
+        window.getAIProductRecommendation = () => {
+            const location = document.getElementById('ai-location').value;
+            const crop = document.getElementById('ai-crop').value;
+            const resultDiv = document.getElementById('ai-product-result');
+            let result = "";
+
+            if (location === 'palamu' && crop === 'arhar') {
+                result = currentLang === 'hi' 
+                    ? "<b>सुझाव:</b> पलामू में अरहर के लिए, 'पूसा अरहर-16' बीज (1 किग्रा) का प्रयोग करें। यह सूखा-सहिष्णु है।<br><br><b>आपको इसकी आवश्यकता होगी:</b><br>1. <a href='#' onclick=\"showPage('shop'); filterMarketplace('seeds');\" class='text-blue-600 underline'>पूसा अरहर-16 बीज</a><br>2. <a href='#' onclick=\"showPage('shop'); filterMarketplace('fertilizer');\" class='text-blue-600 underline'>DAP उर्वरक</a>"
+                    : "<b>Recommendation:</b> For Arhar in Palamu, use 'Pusa Arhar-16' seeds (1kg). It is drought-tolerant.<br><br><b>You will need:</b><br>1. <a href='#' onclick=\"showPage('shop'); filterMarketplace('seeds');\" class='text-blue-600 underline'>Pusa Arhar-16 Seeds</a><br>2. <a href='#' onclick=\"showPage('shop'); filterMarketplace('fertilizer');\" class='text-blue-600 underline'>DAP Fertilizer</a>";
+            } else {
+                result = currentLang === 'hi' ? "इस फसल के लिए, मैं एक संतुलित NPK उर्वरक का उपयोग करने की सलाह दूँगा।" : "For this crop, I would recommend using a balanced NPK fertilizer.";
+            }
+
+            resultDiv.innerHTML = result;
+            resultDiv.style.display = 'block';
+        }
+
+        // --- Voice Recognition Logic ---
+        const voiceButton = document.getElementById('voice-recognition-button');
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = currentLang === 'hi' ? 'hi-IN' : 'en-US';
+
+            recognition.onstart = () => {
+                voiceButton.classList.add('listening', 'text-red-600');
+            };
+
+            recognition.onend = () => {
+                voiceButton.classList.remove('listening', 'text-red-600');
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                chatInput.value = transcript;
+                sendChatMessage(); // Automatically send after transcription
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Voice recognition error", event.error);
+                voiceButton.classList.remove('listening', 'text-red-600');
+            };
+            
+            window.startVoiceRecognition = () => {
+                recognition.lang = currentLang === 'hi' ? 'hi-IN' : 'en-US';
+                recognition.start();
+            }
+
+        } else {
+            console.warn("Speech Recognition not supported by this browser.");
+            voiceButton.style.display = 'none'; // Hide button if not supported
+        }
+        
+        // --- App Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            setLanguage('hi'); // Set default language
+            showPage('home'); // Show home page
+            
+            // Show offline modal on first visit (mock)
+            if (!sessionStorage.getItem('visited')) {
+                 document.getElementById('offline-modal').classList.add('active');
+                 sessionStorage.setItem('visited', 'true');
+            }
+        });
+        
+    </script>
+</body>
+</html>
